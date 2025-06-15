@@ -1,0 +1,142 @@
+from pathlib import Path
+from zipfile import ZipFile
+
+# Lista de héroes con imágenes (simularemos usando enlaces de la wiki de Overwatch)
+heroes_data = {
+    "tanque": {
+        "D.Va": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/3/3b/D.Va-portrait.png",
+        "Doomfist": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/e/eb/Doomfist-portrait.png",
+        "Junker Queen": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/7/75/Junker_Queen-portrait.png",
+        "Mauga": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/8/80/Mauga-portrait.png",
+        "Orisa": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/4/4b/Orisa-portrait.png",
+        "Ramattra": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/0/0f/Ramattra-portrait.png",
+        "Reinhardt": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/c/c5/Reinhardt-portrait.png",
+        "Roadhog": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/f/fb/Roadhog-portrait.png",
+        "Sigma": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/6/67/Sigma-portrait.png",
+        "Winston": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/2/24/Winston-portrait.png",
+        "Wrecking Ball": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/2/25/Wrecking_Ball-portrait.png",
+        "Zarya": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/5/5e/Zarya-portrait.png"
+    },
+    "daño": {
+        "Ashe": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/0/0f/Ashe-portrait.png",
+        "Bastion": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/3/34/Bastion-portrait.png",
+        "Cassidy": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/0/07/Cassidy-portrait.png",
+        "Echo": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/0/01/Echo-portrait.png",
+        "Genji": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/4/4e/Genji-portrait.png",
+        "Hanzo": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/f/f7/Hanzo-portrait.png",
+        "Junkrat": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/e/ea/Junkrat-portrait.png",
+        "Mei": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/6/6d/Mei-portrait.png",
+        "Pharah": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/f/fe/Pharah-portrait.png",
+        "Reaper": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/3/36/Reaper-portrait.png",
+        "Sojourn": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/e/e8/Sojourn-portrait.png",
+        "Soldado: 76": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/2/2a/Soldier_76-portrait.png",
+        "Sombra": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/a/a3/Sombra-portrait.png",
+        "Symmetra": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/f/f8/Symmetra-portrait.png",
+        "Torbjörn": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/7/7b/Torbjorn-portrait.png",
+        "Tracer": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/e/e3/Tracer-portrait.png",
+        "Ventaja": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/5/5b/Ventaja-portrait.png",
+        "Widowmaker": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/d/db/Widowmaker-portrait.png"
+    },
+    "apoyo": {
+        "Ana": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/7/7e/Ana-portrait.png",
+        "Baptiste": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/1/1d/Baptiste-portrait.png",
+        "Brigitte": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/7/78/Brigitte-portrait.png",
+        "Illari": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/5/57/Illari-portrait.png",
+        "Kiriko": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/c/c9/Kiriko-portrait.png",
+        "Lifeweaver": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/6/6f/Lifeweaver-portrait.png",
+        "Lúcio": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/3/3d/Lucio-portrait.png",
+        "Mercy": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/4/40/Mercy-portrait.png",
+        "Moira": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/0/00/Moira-portrait.png",
+        "Zenyatta": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/e/e4/Zenyatta-portrait.png"
+    }
+}
+
+# Convertir el diccionario a una cadena JavaScript
+heroes_js = "const heroes = " + str(heroes_data).replace("'", '"') + ";"
+
+# Crear el contenido HTML
+html_with_images = f"""
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Héroe Aleatorio de Overwatch 2</title>
+  <style>
+    body {{
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #fff;
+      text-align: center;
+      padding: 2rem;
+    }}
+    h1 {{
+      color: #ffaa00;
+    }}
+    select, button {{
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      margin: 1rem;
+      border: none;
+      border-radius: 5px;
+    }}
+    button {{
+      background-color: #ffaa00;
+      color: #000;
+      cursor: pointer;
+    }}
+    #resultado {{
+      font-size: 2rem;
+      margin-top: 2rem;
+      color: #00ffcc;
+    }}
+    #imagen-hero {{
+      margin-top: 1rem;
+      max-width: 200px;
+      border-radius: 10px;
+      border: 2px solid #ffaa00;
+    }}
+  </style>
+</head>
+<body>
+  <h1>Elige un Héroe Aleatorio</h1>
+  <label for="rol">Selecciona un rol:</label>
+  <select id="rol">
+    <option value="tanque">Tanque</option>
+    <option value="daño">Daño</option>
+    <option value="apoyo">Apoyo</option>
+  </select>
+  <button onclick="generarHeroe()">Generar Héroe</button>
+  <div id="resultado"></div>
+  <img id="imagen-hero" src="" alt="Imagen del héroe" style="display:none;" />
+
+  <script>
+    {heroes_js}
+
+    function generarHeroe() {{
+      const rolSeleccionado = document.getElementById("rol").value;
+      const lista = Object.keys(heroes[rolSeleccionado]);
+      const indice = Math.floor(Math.random() * lista.length);
+      const heroe = lista[indice];
+      const imagen = heroes[rolSeleccionado][heroe];
+
+      document.getElementById("resultado").textContent = heroe;
+      const imgElement = document.getElementById("imagen-hero");
+      imgElement.src = imagen;
+      imgElement.style.display = "block";
+    }}
+  </script>
+</body>
+</html>
+"""
+
+# Guardar archivo HTML
+html_file_path = Path("/mnt/data/overwatch_heroe_con_imagenes.html")
+html_file_path.write_text(html_with_images, encoding="utf-8")
+
+# Crear archivo ZIP
+zip_path = Path("/mnt/data/overwatch_heroe_con_imagenes.zip")
+with ZipFile(zip_path, 'w') as zipf:
+    zipf.write(html_file_path, arcname="index.html")
+
+zip_path.name
